@@ -462,22 +462,21 @@ header.bar{
 <div class="aurora"></div>
 <canvas id="sky" aria-hidden="true"></canvas>
 
-<!-- ============ スプラッシュ ============ -->
 <div id="splash" role="dialog" aria-label="ようこそ">
   <svg id="constellation" viewBox="0 0 360 200" aria-hidden="true">
     <circle class="c-glow" cx="180" cy="100" r="90" stroke-width="1"/>
     <path class="c-line" d="M 60 160 L 78 62 L 120 30 L 180 118 L 240 30 L 282 62 L 300 160" />
     <path class="c-line" d="M 120 30 L 96 96 M 240 30 L 264 96" style="animation-delay:.9s;opacity:.4"/>
     <g>
-      <circle class="c-star"      cx="60"  cy="160" r="3"   style="animation-delay:.15s"/>
-      <circle class="c-star big"  cx="78"  cy="62"  r="4.5" style="animation-delay:.45s"/>
-      <circle class="c-star"      cx="120" cy="30"  r="3.5" style="animation-delay:.75s"/>
-      <circle class="c-star big"  cx="180" cy="118" r="5.5" style="animation-delay:1.15s"/>
-      <circle class="c-star"      cx="240" cy="30"  r="3.5" style="animation-delay:1.55s"/>
-      <circle class="c-star big"  cx="282" cy="62"  r="4.5" style="animation-delay:1.85s"/>
-      <circle class="c-star"      cx="300" cy="160" r="3"   style="animation-delay:2.1s"/>
-      <circle class="c-star"      cx="96"  cy="96"  r="2"   style="animation-delay:1.3s"/>
-      <circle class="c-star"      cx="264" cy="96"  r="2"   style="animation-delay:1.7s"/>
+      <circle class="c-star" cx="60" cy="160" r="3" style="animation-delay:.15s"/>
+      <circle class="c-star big" cx="78" cy="62" r="4.5" style="animation-delay:.45s"/>
+      <circle class="c-star" cx="120" cy="30" r="3.5" style="animation-delay:.75s"/>
+      <circle class="c-star big" cx="180" cy="118" r="5.5" style="animation-delay:1.15s"/>
+      <circle class="c-star" cx="240" cy="30" r="3.5" style="animation-delay:1.55s"/>
+      <circle class="c-star big" cx="282" cy="62" r="4.5" style="animation-delay:1.85s"/>
+      <circle class="c-star" cx="300" cy="160" r="3" style="animation-delay:2.1s"/>
+      <circle class="c-star" cx="96" cy="96" r="2" style="animation-delay:1.3s"/>
+      <circle class="c-star" cx="264" cy="96" r="2" style="animation-delay:1.7s"/>
     </g>
   </svg>
   <p class="splash-eyebrow">Constellation of Madono</p>
@@ -487,7 +486,6 @@ header.bar{
   <button class="skip" id="skipBtn">SKIP →</button>
 </div>
 
-<!-- ============ アプリ ============ -->
 <main id="app">
   <header class="bar">
     <div class="bar-name">真殿星哉</div>
@@ -498,7 +496,6 @@ header.bar{
 
   <section class="profile">
     <div class="avatar" id="avatar">
-      <!-- ▼ 写真を入れる場合: 下のコメントを外して src にURLかbase64を設定 ▼ -->
       <!-- <img src="ここに写真" alt="真殿星哉"> -->
       星
       <span class="avatar-ring"></span>
@@ -509,92 +506,122 @@ header.bar{
     </div>
   </section>
 
-  <nav class="steps" aria-label="進行状況">
-    <div class="step-node active" data-step="1"><div class="step-dot"></div><div class="step-label">ご用件</div></div>
-    <div class="step-line" id="line1"></div>
-    <div class="step-node" data-step="2"><div class="step-dot"></div><div class="step-label">日時</div></div>
-    <div class="step-line" id="line2"></div>
-    <div class="step-node" data-step="3"><div class="step-dot"></div><div class="step-label">ご連絡先</div></div>
-    <div class="step-line" id="line3"></div>
-    <div class="step-node" data-step="4"><div class="step-dot"></div><div class="step-label">確定</div></div>
-  </nav>
-
-  <!-- STEP 1: 項目は Supabase から動的表示 -->
-  <section class="screen on" id="s1">
-    <p class="sec-eyebrow">Step 01 / Purpose</p>
-    <h2 class="sec-title">ご用件をお選びください</h2>
-    <p class="sec-lead">下の項目から、あなたのご相談に近いものをひとつ。</p>
-    <div id="typeList"></div>
+  <!-- ?add= : カレンダー追加モード -->
+  <section id="addMode" style="display:none">
+    <div style="text-align:center;padding:20px 0 14px">
+      <div style="font-size:36px;color:var(--other);filter:drop-shadow(0 0 18px rgba(195,155,232,.5))">☾</div>
+      <p class="sec-eyebrow" style="color:var(--other)">Approved</p>
+      <h2 class="sec-title">ご予約が確定しました</h2>
+      <p class="sec-lead">下のボタンから、iPhoneのカレンダーに追加できます。</p>
+    </div>
+    <div class="summary-chip" id="addSummary" style="--c:var(--other);display:block;text-align:center"></div>
+    <button class="btn primary" id="addBtn" style="width:100%;margin-top:20px">📅 iPhoneカレンダーに追加</button>
   </section>
 
-  <!-- STEP 2 -->
-  <section class="screen" id="s2">
-    <p class="sec-eyebrow">Step 02 / Date &amp; Time</p>
-    <h2 class="sec-title">日時をお選びください</h2>
-    <p class="sec-lead" id="s2lead"></p>
+  <!-- 予約フロー -->
+  <div id="flow">
+    <nav class="steps" aria-label="進行状況">
+      <div class="step-node active" data-step="1"><div class="step-dot"></div><div class="step-label">ご用件</div></div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-node" data-step="2"><div class="step-dot"></div><div class="step-label">日時</div></div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-node" data-step="3"><div class="step-dot"></div><div class="step-label">ご連絡先</div></div>
+      <div class="step-line" id="line3"></div>
+      <div class="step-node" data-step="4"><div class="step-dot"></div><div class="step-label">完了</div></div>
+    </nav>
 
-    <div class="cal-head">
-      <button class="cal-nav" id="prevM" aria-label="前の月">←</button>
-      <div class="cal-month" id="calMonth"></div>
-      <button class="cal-nav" id="nextM" aria-label="次の月">→</button>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
+    <section class="screen on" id="s1">
+      <p class="sec-eyebrow">Step 01 / Purpose</p>
+      <h2 class="sec-title">ご用件をお選びください</h2>
+      <p class="sec-lead">下の項目から、あなたのご相談に近いものをひとつ。</p>
+      <div id="typeList"></div>
+    </section>
 
-    <div class="slot-wrap" id="slotWrap">
-      <p class="slot-date" id="slotDate"></p>
-      <div class="slots" id="slots"></div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn ghost" data-back="1">戻る</button>
-      <button class="btn primary" id="toStep3" disabled>連絡先の入力へ</button>
-    </div>
-  </section>
-
-  <!-- STEP 3 -->
-  <section class="screen" id="s3">
-    <p class="sec-eyebrow">Step 03 / Contact</p>
-    <h2 class="sec-title">ご連絡先を教えてください</h2>
-    <p class="sec-lead">確認のご連絡に使用します。</p>
-
-    <div class="summary-chip" id="chip3"></div>
-
-    <div class="field"><label for="fName">お名前 <em>必須</em></label>
-      <input id="fName" type="text" autocomplete="name" placeholder="例）山田 太郎"></div>
-    <div class="field"><label for="fCompany">会社名・屋号</label>
-      <input id="fCompany" type="text" autocomplete="organization" placeholder="例）株式会社〇〇"></div>
-    <div class="field"><label for="fTel">電話番号 <em>必須</em></label>
-      <input id="fTel" type="tel" autocomplete="tel" inputmode="tel" placeholder="例）090-1234-5678"></div>
-    <div class="field"><label for="fMail">メールアドレス</label>
-      <input id="fMail" type="email" autocomplete="email" inputmode="email" placeholder="例）taro@example.com"></div>
-    <div class="field"><label for="fMemo">ご相談内容（任意）</label>
-      <textarea id="fMemo" placeholder="差し支えない範囲で、内容をお聞かせください"></textarea></div>
-
-    <div class="btn-row">
-      <button class="btn ghost" data-back="2">戻る</button>
-      <button class="btn primary" id="toStep4">この内容で予約する</button>
-    </div>
-  </section>
-
-  <!-- STEP 4 -->
-  <section class="screen" id="s4">
-    <p class="sec-eyebrow" style="text-align:center">Reservation Confirmed</p>
-    <h2 class="sec-title" style="text-align:center">ご予約を承りました</h2>
-    <p class="sec-lead" style="text-align:center">あなたの星に、印をつけました。</p>
-
-    <div class="ticket">
-      <div class="ticket-top">
-        <p class="ticket-eyebrow">Star Ticket</p>
-        <p class="ticket-no" id="tNo"></p>
+    <section class="screen" id="s2">
+      <p class="sec-eyebrow">Step 02 / Date &amp; Time</p>
+      <h2 class="sec-title">日時をお選びください</h2>
+      <p class="sec-lead" id="s2lead"></p>
+      <div class="cal-head">
+        <button class="cal-nav" id="prevM" aria-label="前の月">←</button>
+        <div class="cal-month" id="calMonth"></div>
+        <button class="cal-nav" id="nextM" aria-label="次の月">→</button>
       </div>
-      <div class="ticket-body" id="tBody"></div>
-      <p class="ticket-foot">担当・真殿星哉より、前日までに確認のご連絡を差し上げます。</p>
-    </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="slot-wrap" id="slotWrap">
+        <p class="slot-date" id="slotDate"></p>
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost" data-back="1">戻る</button>
+        <button class="btn primary" id="toStep3" disabled>連絡先の入力へ</button>
+      </div>
+    </section>
 
-    <div class="btn-row">
-      <button class="btn ghost" id="restart" style="flex:1">最初に戻る</button>
-    </div>
-  </section>
+    <section class="screen" id="s3">
+      <p class="sec-eyebrow">Step 03 / Contact</p>
+      <h2 class="sec-title" id="s3title">ご連絡先を教えてください</h2>
+      <p class="sec-lead" id="s3lead">確認のご連絡に使用します。</p>
+      <div class="summary-chip" id="chip3"></div>
+
+      <div class="field"><label for="cName">お名前 <em>必須</em></label>
+        <input id="cName" type="text" autocomplete="name" placeholder="例）山田 太郎"></div>
+
+      <!-- 仕事用 -->
+      <div id="workFields">
+        <div class="field"><label for="cCompany">会社名・屋号</label>
+          <input id="cCompany" type="text" autocomplete="organization" placeholder="例）株式会社〇〇"></div>
+        <div class="field"><label for="cTel">電話番号 <em>必須</em></label>
+          <input id="cTel" type="tel" autocomplete="tel" inputmode="tel" placeholder="例）090-1234-5678"></div>
+        <div class="field"><label for="cMail">メールアドレス</label>
+          <input id="cMail" type="email" autocomplete="email" inputmode="email" placeholder="例）taro@example.com"></div>
+        <div class="field"><label for="cMemo">ご相談内容（任意）</label>
+          <textarea id="cMemo" placeholder="差し支えない範囲で、内容をお聞かせください"></textarea></div>
+      </div>
+
+      <!-- 私用 -->
+      <div id="privFields" style="display:none">
+        <div class="field"><label for="cInsta">インスタグラムID <em>必須</em></label>
+          <input id="cInsta" type="text" autocomplete="off" placeholder="例）@hanako_style（@はあってもなくてもOK）"></div>
+        <div class="field"><label for="cLine">LINE友だち追加URL（任意）</label>
+          <input id="cLine" type="url" inputmode="url" autocomplete="off" placeholder="例）https://line.me/ti/p/xxxx"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn ghost" data-back="2">戻る</button>
+        <button class="btn primary" id="cSubmit">この内容で予約する</button>
+      </div>
+    </section>
+
+    <section class="screen" id="s4">
+      <!-- 仕事：チケット -->
+      <div id="doneWork">
+        <p class="sec-eyebrow" style="text-align:center">Reservation Confirmed</p>
+        <h2 class="sec-title" style="text-align:center">ご予約を承りました</h2>
+        <p class="sec-lead" style="text-align:center">あなたの星に、印をつけました。</p>
+        <div class="ticket">
+          <div class="ticket-top"><p class="ticket-eyebrow">Star Ticket</p><p class="ticket-no" id="tNo"></p></div>
+          <div class="ticket-body" id="tBody"></div>
+          <p class="ticket-foot">担当・真殿星哉より、前日までに確認のご連絡を差し上げます。</p>
+        </div>
+      </div>
+      <!-- 私用：申請完了 -->
+      <div id="donePriv" style="display:none">
+        <div style="text-align:center;padding:6px 0 14px">
+          <div style="font-size:34px;color:var(--other);filter:drop-shadow(0 0 16px rgba(195,155,232,.5))">✦</div>
+          <p class="sec-eyebrow" style="color:var(--other);text-align:center">Request Sent</p>
+          <h2 class="sec-title" style="text-align:center">申請を受け付けました</h2>
+        </div>
+        <div class="ticket">
+          <div class="ticket-body">
+            <div class="ticket-row"><span class="k">お名前</span><span class="v" id="donePrivName"></span></div>
+            <div class="ticket-row"><span class="k">ご希望日時</span><span class="v" id="donePrivWhen"></span></div>
+          </div>
+          <p class="ticket-foot">真殿星哉が内容を確認し、承認され次第<br>インスタグラム／LINEでご連絡します。</p>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn ghost" id="restart" style="flex:1">最初に戻る</button></div>
+    </section>
+  </div>
 </main>
 
 
@@ -659,7 +686,6 @@ const dkey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-
 function fmtDate(d){ const dow=['日','月','火','水','木','金','土'][d.getDay()]; return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${dow}）`; }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 const escAttr = s => String(s).replace(/"/g,'&quot;');
-
 function iconSvg(k){
   const I={
     code:'<polyline points="8 6 3 12 8 18"/><polyline points="16 6 21 12 16 18"/><line x1="13" y1="4" x2="11" y2="20"/>',
@@ -672,17 +698,44 @@ function iconSvg(k){
   };
   return I[k]||I.star;
 }
+/* .ics（相手用リンクからのカレンダー追加）*/
+function pad(n){return String(n).padStart(2,'0')}
+function buildICS({title,dateKey,time,durMin,desc}){
+  const [Y,M,D]=dateKey.split('-').map(Number); const [h,mi]=time.split(':').map(Number);
+  const start=`${Y}${pad(M)}${pad(D)}T${pad(h)}${pad(mi)}00`;
+  const e=new Date(Y,M-1,D,h,mi+(durMin||60));
+  const end=`${e.getFullYear()}${pad(e.getMonth()+1)}${pad(e.getDate())}T${pad(e.getHours())}${pad(e.getMinutes())}00`;
+  const n=new Date(); const stamp=`${n.getUTCFullYear()}${pad(n.getUTCMonth()+1)}${pad(n.getUTCDate())}T${pad(n.getUTCHours())}${pad(n.getUTCMinutes())}${pad(n.getUTCSeconds())}Z`;
+  const uid=`${Date.now()}-${Math.random().toString(36).slice(2)}@madono`;
+  const esc=s=>String(s||'').replace(/([,;\\])/g,'\\$1').replace(/\n/g,'\\n');
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Madono Schedule//JP','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',`UID:${uid}`,`DTSTAMP:${stamp}`,`DTSTART:${start}`,`DTEND:${end}`,`SUMMARY:${esc(title)}`,desc?`DESCRIPTION:${esc(desc)}`:'','END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+}
+function openICS(ics){ window.location.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics); }
 
-const state = { type:null, color:null, dur:null, categorySlug:null, date:null, time:null };
-
-/* Supabase未設定時のプレビュー用（プライベートは受付OFFなので出さない） */
+const WORK_HOURS=[10,11,13,14,15,16,17];
+const state={ type:null,color:null,dur:null,categorySlug:null,isPrivate:false,date:null,time:null };
 const DEMO_CATS=[
   {slug:'system',name:'システムの相談',description:'Webアプリ・業務システム・ツール開発のご相談',duration:'60分',color:'#6FD3E8',icon:'code'},
-  {slug:'efficiency',name:'業務効率化',description:'AI活用・自動化・DX・補助金のご相談',duration:'45分',color:'#7FD1A6',icon:'spark'}
+  {slug:'efficiency',name:'業務効率化',description:'AI活用・自動化・DX・補助金のご相談',duration:'45分',color:'#7FD1A6',icon:'spark'},
+  {slug:'other',name:'その他の打ち合わせ',description:'上記以外のご相談・お打ち合わせ',duration:'30分',color:'#F2A65A',icon:'chat'},
+  {slug:'private',name:'プライベート',description:'個人的なご予約（承認制）',duration:'60分',color:'#C39BE8',icon:'moon'}
 ];
-if(demo){
-  const n=$('#demoNote');
-  if(n){ n.textContent='デモ表示中：db.js に Supabase 設定を入れると予約が保存されます'; n.style.display='block'; }
+
+/* ===== ?add= ならカレンダー追加モード ===== */
+const params=new URLSearchParams(location.search);
+if(params.has('add')){
+  $('#splash').classList.add('gone'); $('#app').classList.add('shown'); $('#flow').style.display='none';
+  let p=null; try{ p=JSON.parse(decodeURIComponent(escape(atob(params.get('add'))))); }catch(e){}
+  $('#addMode').style.display='block';
+  if(!p){ $('#addSummary').textContent='リンクが正しくありません。'; $('#addBtn').style.display='none'; }
+  else {
+    const [Y,M,D]=p.d.split('-').map(Number); const dow=['日','月','火','水','木','金','土'][new Date(Y,M-1,D).getDay()];
+    $('#addSummary').innerHTML=`<div class="add-title">${escapeHtml(p.t||'プライベート')}</div><div class="add-when">${Y}年${M}月${D}日（${dow}） ${p.tm}〜</div>`;
+    $('#addBtn').addEventListener('click',()=>openICS(buildICS({title:p.t||'プライベート',dateKey:p.d,time:p.tm,durMin:p.du||60,desc:'真殿星哉との予定'})));
+  }
+} else {
+  if(demo){ const n=$('#demoNote'); if(n){ n.textContent='デモ表示中：db.js に Supabase 設定を入れると予約が保存されます'; n.style.display='block'; } }
+  renderTypes();
 }
 
 /* スプラッシュ */
@@ -690,7 +743,6 @@ function enterApp(){ $('#splash').classList.add('gone'); $('#app').classList.add
 $('#enterBtn').addEventListener('click', enterApp);
 $('#skipBtn').addEventListener('click', enterApp);
 
-/* ステップ制御 */
 function goStep(n){
   $$('.screen').forEach(s=>s.classList.remove('on'));
   $('#s'+n).classList.add('on');
@@ -702,39 +754,40 @@ function goStep(n){
 }
 $$('[data-back]').forEach(b=>b.addEventListener('click',()=>goStep(+b.dataset.back)));
 
-/* カレンダー基礎 */
 const today=new Date(); today.setHours(0,0,0,0);
 let calY=today.getFullYear(), calM=today.getMonth();
 const MONTH_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 let blocked=[];
 
-/* STEP1: 項目を動的表示 */
+/* STEP1: カテゴリ（仕事＋私用を1画面に） */
 async function renderTypes(){
   const wrap=$('#typeList');
   wrap.innerHTML='<p style="color:var(--dim);font-size:13px;letter-spacing:.1em">項目を読み込み中…</p>';
   let list=DEMO_CATS;
-  if(!demo){ try{ list=await db.bookableCategories(); }catch(e){ list=[]; } }
-  if(!list.length){ wrap.innerHTML='<p style="color:var(--dim);font-size:13px;letter-spacing:.05em">現在受付中の項目がありません。</p>'; return; }
+  if(!demo){ try{ list=await db.customerCategories(); }catch(e){ list=[]; } }
+  if(!list.length){ wrap.innerHTML='<p style="color:var(--dim);font-size:13px">現在ご予約いただける項目がありません。</p>'; return; }
   wrap.innerHTML=list.map(c=>`
     <button class="type-card" style="--c:${c.color||'var(--gold)'}" data-slug="${escAttr(c.slug)}" data-name="${escAttr(c.name)}" data-dur="${escAttr(c.duration||'')}" data-color="${escAttr(c.color||'var(--gold)')}">
       <span class="type-star"><svg viewBox="0 0 24 24">${iconSvg(c.icon)}</svg></span>
       <span class="type-body">
-        <span class="type-name">${escapeHtml(c.name)}</span>
+        <span class="type-name">${escapeHtml(c.name)}${c.slug==='private'?' <span style="font-size:10px;color:var(--other);border:1px solid rgba(195,155,232,.4);border-radius:5px;padding:1px 5px;letter-spacing:.05em">承認制</span>':''}</span>
         <span class="type-desc" style="display:block">${escapeHtml(c.description||'')}</span>
       </span>
       <span class="type-dur">${escapeHtml(c.duration||'')}</span>
       <span class="arrow">→</span>
     </button>`).join('');
   wrap.querySelectorAll('.type-card').forEach(card=>card.addEventListener('click', async ()=>{
-    state.type=card.dataset.name; state.dur=card.dataset.dur; state.color=card.dataset.color||'var(--gold)'; state.categorySlug=card.dataset.slug;
+    state.categorySlug=card.dataset.slug; state.type=card.dataset.name; state.dur=card.dataset.dur;
+    state.color=card.dataset.color||'var(--gold)'; state.isPrivate=(card.dataset.slug==='private');
     state.date=state.time=null;
-    $('#s2lead').textContent=`「${state.type}」(目安 ${state.dur}) のご希望日時をお選びください。`;
+    $('#s2lead').textContent = state.isPrivate
+      ? `「${state.type}」の空き枠から、ご希望日時をお選びください。`
+      : `「${state.type}」(目安 ${state.dur}) のご希望日時をお選びください。`;
     if(!demo){ try{ blocked=await db.blockedDays(); }catch(e){ blocked=[]; } }
     renderCal(); $('#slotWrap').classList.remove('on'); $('#toStep3').disabled=true; goStep(2);
   }));
 }
 
-/* STEP2: カレンダー */
 function renderCal(){
   $('#calMonth').innerHTML=`${calY}年 ${calM+1}月 <small>${MONTH_EN[calM]}</small>`;
   const grid=$('#calGrid'); grid.innerHTML='';
@@ -766,22 +819,32 @@ function renderCal(){
 $('#prevM').addEventListener('click',()=>{ calM--; if(calM<0){calM=11;calY--;} renderCal(); });
 $('#nextM').addEventListener('click',()=>{ calM++; if(calM>11){calM=0;calY++;} renderCal(); });
 
+/* STEP2: 空き枠（仕事＝業務時間−私用解放−予約済 / 私用＝解放枠−予約済）*/
 async function renderSlots(){
   $('#slotDate').textContent=fmtDate(state.date)+' の空き状況';
-  const wrap=$('#slots');
-  wrap.innerHTML='<p style="grid-column:1/-1;color:var(--dim);font-size:13px;letter-spacing:.1em">空き状況を確認中…</p>';
-  let taken=[];
-  if(!demo){ try{ taken=await db.takenSlots(dkey(state.date)); }catch(e){ taken=[]; } }
+  const wrap=$('#slots'); wrap.innerHTML='<p style="grid-column:1/-1;color:var(--dim);font-size:13px;letter-spacing:.1em">空き状況を確認中…</p>';
+  const dk=dkey(state.date);
+  let taken=[], priv=[];
+  if(!demo){
+    try{ taken=await db.takenSlots(dk); }catch(e){}
+    try{ priv=await db.privateSlotsForDate(dk); }catch(e){}
+  }
+  const isToday=+state.date===+today; const nowH=new Date().getHours();
+  let hours;
+  if(state.isPrivate){
+    const base = demo ? [18,19,20] : priv.map(t=>parseInt(t));
+    hours = base.filter(h=>!taken.includes(`${h}:00`));
+  }else{
+    hours = WORK_HOURS.filter(h=> !priv.includes(`${h}:00`) && !taken.includes(`${h}:00`));
+  }
+  hours = hours.filter(h=> !(isToday && h<=nowH)).sort((a,b)=>a-b);
   wrap.innerHTML='';
-  const seed=state.date.getDate()*7 + state.date.getMonth()*3;
-  const hours=[10,11,13,14,15,16,17];
-  hours.forEach((h,i)=>{
+  if(!hours.length){
+    wrap.innerHTML = `<p style="grid-column:1/-1;color:var(--dim);font-size:13px;letter-spacing:.05em">${state.isPrivate?'この日は空き枠がありません。別の日をお試しください。':'この日は空きがありません。別の日をお試しください。'}</p>`;
+    $('#slotWrap').classList.add('on'); return;
+  }
+  hours.forEach(h=>{
     const btn=document.createElement('button'); btn.className='slot'; btn.textContent=`${h}:00`;
-    const isToday=+state.date===+today;
-    const past=isToday && h<=new Date().getHours();
-    const busy= demo ? ((seed+i*5)%9===0) : false;
-    const isTaken= taken.includes(`${h}:00`);
-    btn.disabled=past||busy||isTaken;
     btn.addEventListener('click',()=>{ state.time=`${h}:00`; $$('.slot').forEach(x=>x.classList.remove('sel')); btn.classList.add('sel'); $('#toStep3').disabled=false; });
     wrap.appendChild(btn);
   });
@@ -790,52 +853,54 @@ async function renderSlots(){
 
 $('#toStep3').addEventListener('click',()=>{
   const chip=$('#chip3'); chip.style.setProperty('--c',state.color);
-  chip.innerHTML=`<span class="dot"></span><span>${escapeHtml(state.type)}　|　${fmtDate(state.date)} ${state.time}〜（${escapeHtml(state.dur)}）</span>`;
+  chip.innerHTML=`<span class="dot"></span><span>${escapeHtml(state.type)}　|　${fmtDate(state.date)} ${state.time}〜</span>`;
+  // カテゴリで入力欄を切替
+  $('#workFields').style.display = state.isPrivate ? 'none' : 'block';
+  $('#privFields').style.display = state.isPrivate ? 'block' : 'none';
+  $('#s3title').textContent = state.isPrivate ? 'ご連絡先を教えてください（承認制）' : 'ご連絡先を教えてください';
+  $('#s3lead').textContent  = state.isPrivate ? '承認後、インスタ／LINEでご連絡します。' : '確認のご連絡に使用します。';
+  $('#cSubmit').textContent = state.isPrivate ? 'この内容で申請する' : 'この内容で予約する';
   goStep(3);
 });
 
-/* STEP3 → 4: 予約送信 */
-$('#toStep4').addEventListener('click', async ()=>{
-  const name=$('#fName').value.trim(), tel=$('#fTel').value.trim();
-  if(!name){ $('#fName').focus(); $('#fName').style.borderColor='var(--wall)'; return; }
-  if(!tel){ $('#fTel').focus(); $('#fTel').style.borderColor='var(--wall)'; return; }
-  const no='MS-'+String(Date.now()).slice(-6);
-  const booking={ no, type:state.type, dur:state.dur, categorySlug:state.categorySlug, color:state.color,
-    dateKey:dkey(state.date), dateLabel:fmtDate(state.date), time:state.time,
-    name, company:$('#fCompany').value.trim(), tel, mail:$('#fMail').value.trim(), memo:$('#fMemo').value.trim() };
-  const btn=$('#toStep4'); const orig=btn.textContent; btn.disabled=true; btn.textContent='予約を送信中…';
+/* STEP3 → 4 */
+$('#cSubmit').addEventListener('click', async ()=>{
+  const name=$('#cName').value.trim();
+  if(!name){ $('#cName').focus(); $('#cName').style.borderColor='var(--wall)'; return; }
+  const btn=$('#cSubmit'); const orig=btn.textContent; btn.disabled=true; btn.textContent='送信中…';
   try{
-    if(!demo) await db.addBooking(booking);
-    $('#tNo').textContent=no;
-    const rows=[
-      ['ご用件', state.type],
-      ['日時', `${fmtDate(state.date)} ${state.time}〜`],
-      ['所要時間', `約 ${state.dur}`],
-      ['お名前', name+' 様'],
-      ['会社名', booking.company||'—'],
-      ['電話番号', tel],
-      ['メール', booking.mail||'—'],
-      ['ご相談内容', booking.memo||'—'],
-    ];
-    $('#tBody').innerHTML=rows.map(([k,v])=>`<div class="ticket-row"><span class="k">${k}</span><span class="v">${escapeHtml(v)}</span></div>`).join('');
+    if(state.isPrivate){
+      let insta=$('#cInsta').value.trim().replace(/^@+/,''); const line=$('#cLine').value.trim();
+      if(!insta){ $('#cInsta').focus(); $('#cInsta').style.borderColor='var(--wall)'; btn.disabled=false; btn.textContent=orig; return; }
+      const req={ no:'PV-'+String(Date.now()).slice(-6), type:state.type, dur:state.dur, color:state.color,
+        dateKey:dkey(state.date), dateLabel:fmtDate(state.date), time:state.time, name, instagram:insta, lineUrl:line||null };
+      if(!demo) await db.submitPrivateRequest(req);
+      $('#donePrivName').textContent=name+'（@'+insta+'）';
+      $('#donePrivWhen').textContent=`${fmtDate(state.date)} ${state.time}〜`;
+      $('#doneWork').style.display='none'; $('#donePriv').style.display='block';
+    }else{
+      const tel=$('#cTel').value.trim();
+      if(!tel){ $('#cTel').focus(); $('#cTel').style.borderColor='var(--wall)'; btn.disabled=false; btn.textContent=orig; return; }
+      const booking={ no:'MS-'+String(Date.now()).slice(-6), type:state.type, dur:state.dur, categorySlug:state.categorySlug, color:state.color,
+        dateKey:dkey(state.date), dateLabel:fmtDate(state.date), time:state.time, name,
+        company:$('#cCompany').value.trim(), tel, mail:$('#cMail').value.trim(), memo:$('#cMemo').value.trim() };
+      if(!demo) await db.addBooking(booking);
+      $('#tNo').textContent=booking.no;
+      const rows=[['ご用件',state.type],['日時',`${fmtDate(state.date)} ${state.time}〜`],['所要時間',`約 ${state.dur}`],['お名前',name+' 様'],['会社名',booking.company||'—'],['電話番号',tel],['メール',booking.mail||'—'],['ご相談内容',booking.memo||'—']];
+      $('#tBody').innerHTML=rows.map(([k,v])=>`<div class="ticket-row"><span class="k">${k}</span><span class="v">${escapeHtml(v)}</span></div>`).join('');
+      $('#donePriv').style.display='none'; $('#doneWork').style.display='block';
+    }
     goStep(4);
-  }catch(e){
-    console.error(e);
-    alert('予約の送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。');
-  }finally{ btn.disabled=false; btn.textContent=orig; }
+  }catch(e){ console.error(e); alert('送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。'); }
+  finally{ btn.disabled=false; btn.textContent=orig; }
 });
 
-/* リスタート */
 $('#restart').addEventListener('click',()=>{
-  Object.keys(state).forEach(k=>state[k]=null);
-  ['fName','fCompany','fTel','fMail','fMemo'].forEach(id=>$('#'+id).value='');
-  $('#fName').style.borderColor=''; $('#fTel').style.borderColor='';
+  state.type=state.color=state.dur=state.categorySlug=state.date=state.time=null; state.isPrivate=false;
+  ['cName','cCompany','cTel','cMail','cMemo','cInsta','cLine'].forEach(id=>{ const el=$('#'+id); if(el){ el.value=''; el.style.borderColor=''; } });
   calY=today.getFullYear(); calM=today.getMonth();
   goStep(1);
 });
-
-/* 起動：項目を読み込む */
-renderTypes();
 
 </script>
 </body>
