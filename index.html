@@ -745,7 +745,6 @@ $$('[data-back]').forEach(b=>b.addEventListener('click',()=>goStep(+b.dataset.ba
 const today=new Date(); today.setHours(0,0,0,0);
 let calY=today.getFullYear(), calM=today.getMonth();
 const MONTH_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-let blocked=[];
 
 async function renderTypes(){
   const wrap=$('#typeList');
@@ -763,7 +762,6 @@ async function renderTypes(){
     state.categorySlug=card.dataset.slug; state.type=card.dataset.name; state.dur=card.dataset.dur;
     state.color=card.dataset.color||'var(--gold)'; state.isPrivate=(card.dataset.slug==='private');
     state.date=null; state.candidates=[];
-    if(!demo){ try{ blocked=await db.blockedDays(); }catch(e){ blocked=[]; } }
     renderCal(); $('#slotWrap').classList.remove('on'); renderCandidateList(); goStep(2);
   }));
 }
@@ -781,7 +779,7 @@ function renderCal(){
     const btn=document.createElement('button'); btn.className='cal-day'; btn.textContent=d;
     if(+date===+today) btn.classList.add('today');
     if(state.candidates.some(c=>c.dateKey===dkey(date))) btn.classList.add('hascand');
-    const disabled = date<today || date>max || date.getDay()===0 || blocked.includes(dkey(date));
+    const disabled = date<today || date>max || date.getDay()===0;
     btn.disabled=disabled;
     if(state.date && +date===+state.date) btn.classList.add('sel');
     if(!disabled){ btn.addEventListener('click', async ()=>{
@@ -801,12 +799,15 @@ async function renderSlots(){
   const dk=dkey(state.date);
   $('#slotDate').textContent=fmtDate(state.date)+' の空き状況';
   const wrap=$('#slots'); wrap.innerHTML='<p style="grid-column:1/-1;color:var(--dim);font-size:13px;letter-spacing:.1em">空き状況を確認中…</p>';
-  let taken=[], priv=[];
-  if(!demo){ try{ taken=await db.takenSlots(dk); }catch(e){} try{ priv=await db.privateSlotsForDate(dk); }catch(e){} }
+  let blk=[], priv=[];
+  if(!demo){
+    try{ priv=await db.privateSlotsForDate(dk); }catch(e){}
+    try{ blk = state.isPrivate ? await db.privateBlockedSlots(dk) : await db.workBlockedSlots(dk); }catch(e){}
+  }
   const isToday=+state.date===+today; const nowH=new Date().getHours();
   let hours;
-  if(state.isPrivate){ const base=demo?[18,19,20,21]:priv.map(t=>parseInt(t)); hours=base.filter(h=>!taken.includes(`${h}:00`)); }
-  else { hours=WORK_HOURS.filter(h=>!priv.includes(`${h}:00`)&&!taken.includes(`${h}:00`)); }
+  if(state.isPrivate){ const base=demo?[18,19,20,21]:priv.map(t=>parseInt(t)); hours=base.filter(h=>!blk.includes(`${h}:00`)); }
+  else { hours=WORK_HOURS.filter(h=>!priv.includes(`${h}:00`)&&!blk.includes(`${h}:00`)); }
   // 自分が既に候補に入れた枠は taken でも残す
   const mine=state.candidates.filter(c=>c.dateKey===dk).map(c=>parseInt(c.time));
   mine.forEach(h=>{ if(!hours.includes(h)) hours.push(h); });

@@ -546,6 +546,9 @@ input[type=color]{width:100%;height:46px;background:var(--night-2);border:1px so
 .cand-lbl{font-size:11px;letter-spacing:.08em;color:var(--dim);margin-bottom:8px}
 .cand-opt{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:7px 0;cursor:pointer}
 .cand-opt input{width:18px;height:18px;accent-color:var(--other)}
+
+/* v8: 確定済み候補 */
+.cand-opt.taken{opacity:.5}
 </style>
 <style>
   body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -664,12 +667,9 @@ input[type=color]{width:100%;height:46px;background:var(--night-2);border:1px so
     </div>
 
     <div class="adm-pane" id="pSlots">
-      <p class="sec-lead">日付を選んで、①この日を終日休みにする、または②プライベート枠を解放します。①は仕事・私用とも予約不可、②で開けた枠だけが私用予約に出て、同じ時間は仕事側から外れます。</p>
+      <p class="sec-lead">プライベート予約を受け付ける「枠」を解放します。ここで開けた枠だけが私用予約に出て、同じ時間は仕事側から外れます。（終日の予定は「予約追加」タブで登録できます）</p>
       <div class="field"><label for="psDate">日付</label><input type="date" id="psDate" class="sel"></div>
-      <button class="btn ghost" id="dayOff" style="width:100%;border-color:rgba(232,144,144,.5);color:#E89090">✕ この日を終日休みにする</button>
-      <div id="blockList" style="margin-top:12px"></div>
-      <div style="height:1px;background:var(--hairline);margin:24px 0"></div>
-      <label style="display:block;font-size:12px;letter-spacing:.16em;color:var(--dim);margin-bottom:10px">プライベート枠を解放（複数選択可・24時間）</label>
+      <label style="display:block;font-size:12px;letter-spacing:.16em;color:var(--dim);margin-bottom:10px">解放する時間（複数選択可・24時間）</label>
       <div class="ps-quick" id="psQuick"><button data-q="all">全部</button><button data-q="day">日中</button><button data-q="night">夜</button><button data-q="clear">クリア</button></div>
       <div class="pslots" id="psTimes"></div>
       <button class="btn primary" id="psAdd" style="width:100%;margin-top:14px">この日にプライベート枠を解放する</button>
@@ -792,7 +792,6 @@ async function copyText(t, btn){
 
 let admFilter='all';
 let bookingsCache=[];   // 全件
-let blockedCache=[];
 let catsCache=[];
 let privSlotsCache=[];
 let editingSlug=null;
@@ -842,11 +841,10 @@ async function renderAdmin(){
   $('#bkList').innerHTML='<div class="bk-empty">読み込み中…</div>';
   try{
     bookingsCache=await db.allBookings();
-    blockedCache =await db.blockedDays();
     catsCache    =await db.allCategories();
     privSlotsCache=await db.allPrivateSlots();
   }catch(e){ console.error(e); showLogin(); return; }
-  renderStats(); renderBkList(); renderPending(); renderBlockList(); renderCatList(); populateAbCat(); renderPrivSlots();
+  renderStats(); renderBkList(); renderPending(); renderCatList(); populateAbCat(); renderPrivSlots();
 }
 
 /* ===== 予約一覧（承認済） ===== */
@@ -928,6 +926,7 @@ function renderPending(){
   // request_id でグループ化
   const groups={};
   list.forEach(b=>{ const k=b.request_id||('single-'+b.id); (groups[k]=groups[k]||[]).push(b); });
+  const approvedTaken=new Set(approved().map(b=>b.date_key+' '+b.time));
   const keys=Object.keys(groups);
   const cnt=$('#reqCount'); cnt.textContent=keys.length; cnt.style.display=keys.length?'inline-flex':'none';
   const wrap=$('#reqList');
@@ -945,7 +944,7 @@ function renderPending(){
       if(b0.mail) contact+=' ✉ '+escapeHtml(b0.mail);
       if(b0.company) contact+='（'+escapeHtml(b0.company)+'）';
     }
-    const cands=rows.map(r=>'<label class="cand-opt"><input type="checkbox" data-cid="'+r.id+'"> '+escapeHtml(r.date_label||r.date_key)+' '+r.time+'〜</label>').join('');
+    const cands=rows.map(r=>{ const taken=approvedTaken.has(r.date_key+' '+r.time); return '<label class="cand-opt'+(taken?' taken':'')+'"><input type="checkbox" data-cid="'+r.id+'"'+(taken?' disabled':'')+'> '+escapeHtml(r.date_label||r.date_key)+' '+r.time+'〜'+(taken?' <span style="color:#E89090;font-size:11px">（他で確定済み）</span>':'')+'</label>'; }).join('');
     return '<div class="bk-card" style="--c:'+(b0.color||'var(--other)')+'" data-group="'+k+'">'
       +'<div class="bk-top"><div><div class="bk-type">'+escapeHtml(b0.type||'')+(isPriv?' <span class="src-badge">私用</span>':'')+'</div><div class="bk-when" style="font-size:15px">'+escapeHtml(b0.name||'')+' 様</div></div><div class="bk-no">'+escapeHtml(b0.no||'')+'</div></div>'
       +(contact?'<div class="bk-info">'+contact+'</div>':'')
@@ -1063,24 +1062,7 @@ $('#cfSave').addEventListener('click', async ()=>{
 });
 
 /* ===== 休止日 ===== */
-$('#dayOff').addEventListener('click', async ()=>{
-  const v=$('#psDate').value;
-  if(!v){ alert('日付を選んでください'); return; }
-  if(!confirm(v+' を終日休み（予約不可）にしますか？')) return;
-  const btn=$('#dayOff'); const o=btn.textContent; btn.disabled=true; btn.textContent='設定中…';
-  try{ await db.addBlocked(v); blockedCache=await db.blockedDays(); renderBlockList(); }
-  catch(e){ alert('設定に失敗しました'); }
-  finally{ btn.disabled=false; btn.textContent=o; }
-});
-function renderBlockList(){
-  const wrap=$('#blockList'); const list=blockedCache;
-  if(!list.length){ wrap.innerHTML='<div class="bk-empty"><span class="e-star">☾</span>休止日は設定されていません。</div>'; return; }
-  wrap.innerHTML=list.map(d=>{ const [y,m,dd]=d.split('-'); const dow=['日','月','火','水','木','金','土'][new Date(+y,+m-1,+dd).getDay()]; return `<div class="block-item"><span>${y}年${+m}月${+dd}日（${dow}）</span><button data-unblock="${d}">解除</button></div>`; }).join('');
-  wrap.querySelectorAll('[data-unblock]').forEach(btn=>btn.addEventListener('click', async ()=>{
-    try{ await db.removeBlocked(btn.dataset.unblock); }catch(e){ alert('解除に失敗しました'); return; }
-    blockedCache=await db.blockedDays(); renderBlockList();
-  }));
-}
+
 
 /* ===== プッシュ通知 ===== */
 const pushSupported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
