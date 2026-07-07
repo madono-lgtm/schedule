@@ -535,6 +535,17 @@ input[type=color]{width:100%;height:46px;background:var(--night-2);border:1px so
 .ps-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:6px 10px;border-radius:8px;background:rgba(195,155,232,.12);border:1px solid rgba(195,155,232,.35);color:var(--other)}
 .ps-chip button{color:var(--other);font-size:15px;line-height:1;opacity:.7}
 .ps-chip button:hover{opacity:1}
+
+/* v6: 空き枠クイック選択 */
+.ps-quick{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.ps-quick button{font-size:12px;letter-spacing:.06em;padding:7px 14px;border-radius:999px;border:1px solid var(--hairline);color:var(--dim);transition:all .2s}
+.ps-quick button:hover{border-color:var(--other);color:var(--other)}
+
+/* v7: 候補チェック（複数承認） */
+.cand-box{background:rgba(7,11,22,.4);border-radius:10px;padding:12px 14px;margin-top:12px}
+.cand-lbl{font-size:11px;letter-spacing:.08em;color:var(--dim);margin-bottom:8px}
+.cand-opt{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:7px 0;cursor:pointer}
+.cand-opt input{width:18px;height:18px;accent-color:var(--other)}
 </style>
 <style>
   body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -590,9 +601,8 @@ input[type=color]{width:100%;height:46px;background:var(--night-2);border:1px so
       <button class="adm-tab on" data-pane="pList">予約一覧</button>
       <button class="adm-tab" data-pane="pReq">申請<span id="reqCount" class="tab-count" style="display:none"></span></button>
       <button class="adm-tab" data-pane="pAdd">予約追加</button>
-      <button class="adm-tab" data-pane="pSlots">私用枠</button>
+      <button class="adm-tab" data-pane="pSlots">空き枠</button>
       <button class="adm-tab" data-pane="pCat">項目設定</button>
-      <button class="adm-tab" data-pane="pBlock">休止日</button>
     </div>
 
     <!-- 予約一覧 -->
@@ -651,28 +661,21 @@ input[type=color]{width:100%;height:46px;background:var(--night-2);border:1px so
       </div>
     </div>
 
-    <!-- 私用枠の解放 -->
     <div class="adm-pane" id="pSlots">
-      <p class="sec-lead">プライベート予約を受け付ける「枠」を解放します。ここで開けた枠だけがプライベート予約に表示され、同じ時間は仕事側から自動で外れます。</p>
+      <p class="sec-lead">日付を選んで、①この日を終日休みにする、または②プライベート枠を解放します。①は仕事・私用とも予約不可、②で開けた枠だけが私用予約に出て、同じ時間は仕事側から外れます。</p>
       <div class="field"><label for="psDate">日付</label><input type="date" id="psDate" class="sel"></div>
-      <label style="display:block;font-size:12px;letter-spacing:.16em;color:var(--dim);margin-bottom:8px">解放する時間（複数選択可）</label>
+      <button class="btn ghost" id="dayOff" style="width:100%;border-color:rgba(232,144,144,.5);color:#E89090">✕ この日を終日休みにする</button>
+      <div id="blockList" style="margin-top:12px"></div>
+      <div style="height:1px;background:var(--hairline);margin:24px 0"></div>
+      <label style="display:block;font-size:12px;letter-spacing:.16em;color:var(--dim);margin-bottom:10px">プライベート枠を解放（複数選択可・24時間）</label>
+      <div class="ps-quick" id="psQuick"><button data-q="all">全部</button><button data-q="day">日中</button><button data-q="night">夜</button><button data-q="clear">クリア</button></div>
       <div class="pslots" id="psTimes"></div>
-      <button class="btn primary" id="psAdd" style="width:100%;margin-top:14px">この日に解放する</button>
+      <button class="btn primary" id="psAdd" style="width:100%;margin-top:14px">この日にプライベート枠を解放する</button>
       <p id="psMsg" class="msg-ok"></p>
-      <div style="height:1px;background:var(--hairline);margin:22px 0"></div>
-      <p class="sec-lead">解放中の枠</p>
-      <div id="psList"></div>
+      <div style="margin-top:16px"><p class="sec-lead" style="margin-bottom:10px">解放中の枠</p><div id="psList"></div></div>
     </div>
 
-    <!-- 休止日 -->
-    <div class="adm-pane" id="pBlock">
-      <p class="sec-lead">指定した日は、お客様側のカレンダーで選択できなくなります。</p>
-      <div class="block-add">
-        <input type="date" id="blockDate" aria-label="休止日を選択">
-        <button class="btn primary" id="blockAdd" style="flex:none">追加</button>
-      </div>
-      <div id="blockList"></div>
-    </div>
+
   </div>
 </div>
 
@@ -872,7 +875,7 @@ function renderBkList(){
       ${b.memo?`<div class="bk-memo">${escapeHtml(b.memo)}</div>`:''}
       <div class="bk-actions">
         <button class="bk-btn" data-ics="${b.id}">📅 カレンダー</button>
-        ${b.source==='private'?`<button class="bk-btn" data-guest="${b.id}">🔗 相手用リンク</button>`:''}
+        ${b.source!=='admin'?`<button class="bk-btn" data-guest="${b.id}">🔗 相手用リンク</button>`:''}
         ${b.line_url?`<button class="bk-btn" onclick="window.open('${encodeURI(b.line_url)}','_blank')">LINE</button>`:''}
         ${b.tel?`<button class="bk-btn" onclick="location.href='tel:${encodeURIComponent(b.tel)}'">電話</button>`:''}
         <button class="bk-btn danger" data-del="${b.id}">取り消す</button>
@@ -897,37 +900,50 @@ function renderBkList(){
 /* ===== プライベート申請 ===== */
 function renderPending(){
   const list=pending();
-  const cnt=$('#reqCount'); cnt.textContent=list.length; cnt.style.display=list.length?'inline-flex':'none';
+  // request_id でグループ化
+  const groups={};
+  list.forEach(b=>{ const k=b.request_id||('single-'+b.id); (groups[k]=groups[k]||[]).push(b); });
+  const keys=Object.keys(groups);
+  const cnt=$('#reqCount'); cnt.textContent=keys.length; cnt.style.display=keys.length?'inline-flex':'none';
   const wrap=$('#reqList');
-  if(!list.length){ wrap.innerHTML='<div class="bk-empty"><span class="e-star">☾</span>承認待ちの申請はありません。</div>'; return; }
-  wrap.innerHTML=list.map(b=>`
-    <div class="bk-card" style="--c:var(--other)">
-      <div class="bk-top">
-        <div>
-          <div class="bk-when">${escapeHtml(b.date_label||b.date_key)} ${b.time}〜</div>
-          <div class="bk-type" style="color:var(--other)">プライベート申請</div>
-        </div>
-        <div class="bk-no">${escapeHtml(b.no||'')}</div>
-      </div>
-      <div class="bk-info">
-        <b>${escapeHtml(b.name||'')}</b> さま
-        <br>📷 <a href="https://instagram.com/${encodeURIComponent(b.instagram||'')}" target="_blank" rel="noopener" style="color:var(--other)">@${escapeHtml(b.instagram||'')}</a>
-        ${b.line_url?`<br>💬 <a href="${encodeURI(b.line_url)}" target="_blank" rel="noopener" style="color:#7FD1A6">LINEで友だち追加</a>`:''}
-      </div>
-      <div class="bk-actions">
-        <button class="bk-btn approve" data-approve="${b.id}">承認する</button>
-        <button class="bk-btn danger" data-reject="${b.id}">却下</button>
-      </div>
-    </div>`).join('');
-  wrap.querySelectorAll('[data-approve]').forEach(btn=>btn.addEventListener('click', async ()=>{
+  if(!keys.length){ wrap.innerHTML='<div class="bk-empty"><span class="e-star">☾</span>承認待ちの申請はありません。</div>'; return; }
+  wrap.innerHTML=keys.map(k=>{
+    const rows=groups[k].slice().sort((a,b)=>(a.date_key+a.time).localeCompare(b.date_key+b.time));
+    const b0=rows[0];
+    const isPriv=(b0.source==='private')||(b0.category_slug==='private');
+    let contact='';
+    if(isPriv){
+      contact='📷 <a href="https://instagram.com/'+encodeURIComponent(b0.instagram||'')+'" target="_blank" rel="noopener" style="color:var(--other)">@'+escapeHtml(b0.instagram||'')+'</a>';
+      if(b0.line_url) contact+=' / 💬 <a href="'+encodeURI(b0.line_url)+'" target="_blank" rel="noopener" style="color:#7FD1A6">LINE追加</a>';
+    } else {
+      if(b0.tel) contact+='📞 '+escapeHtml(b0.tel);
+      if(b0.mail) contact+=' ✉ '+escapeHtml(b0.mail);
+      if(b0.company) contact+='（'+escapeHtml(b0.company)+'）';
+    }
+    const cands=rows.map(r=>'<label class="cand-opt"><input type="checkbox" data-cid="'+r.id+'"> '+escapeHtml(r.date_label||r.date_key)+' '+r.time+'〜</label>').join('');
+    return '<div class="bk-card" style="--c:'+(b0.color||'var(--other)')+'" data-group="'+k+'">'
+      +'<div class="bk-top"><div><div class="bk-type">'+escapeHtml(b0.type||'')+(isPriv?' <span class="src-badge">私用</span>':'')+'</div><div class="bk-when" style="font-size:15px">'+escapeHtml(b0.name||'')+' 様</div></div><div class="bk-no">'+escapeHtml(b0.no||'')+'</div></div>'
+      +(contact?'<div class="bk-info">'+contact+'</div>':'')
+      +(b0.memo?'<div class="bk-memo">'+escapeHtml(b0.memo)+'</div>':'')
+      +'<div class="cand-box"><div class="cand-lbl">承認する候補を選択（複数可）</div>'+cands+'</div>'
+      +'<div class="bk-actions"><button class="bk-btn approve" data-approve-group="'+k+'">選んだ候補を承認</button><button class="bk-btn danger" data-reject-group="'+k+'">却下</button></div>'
+      +'</div>';
+  }).join('');
+  wrap.querySelectorAll('[data-approve-group]').forEach(btn=>btn.addEventListener('click', async ()=>{
+    const k=btn.dataset.approveGroup; const card=btn.closest('[data-group]');
+    const checked=[...card.querySelectorAll('input[data-cid]:checked')].map(i=>i.dataset.cid);
+    if(!checked.length){ alert('承認する候補を1つ以上選んでください'); return; }
+    const all=groups[k].map(b=>b.id); const drop=all.filter(id=>!checked.includes(id));
     btn.disabled=true; btn.textContent='承認中…';
-    try{ await db.approveBooking(btn.dataset.approve); }catch(e){ alert('承認に失敗しました'); btn.disabled=false; btn.textContent='承認する'; return; }
+    try{ await db.approveCandidates(checked); if(drop.length) await db.deleteBookings(drop); }
+    catch(e){ console.error(e); alert('承認に失敗しました'); btn.disabled=false; btn.textContent='選んだ候補を承認'; return; }
     await renderAdmin();
-    alert('承認しました。予約一覧の「🔗 相手用リンク」をコピーして、インスタ／LINEで相手に送ってください（相手がタップでカレンダーに追加できます）。');
+    alert('承認しました。予約一覧の「🔗 相手用リンク」をコピーして相手に送ってください。');
   }));
-  wrap.querySelectorAll('[data-reject]').forEach(btn=>btn.addEventListener('click', async ()=>{
-    if(!confirm('この申請を却下しますか？（枠は空きに戻ります）')) return;
-    try{ await db.rejectBooking(btn.dataset.reject); }catch(e){ alert('却下に失敗しました'); return; }
+  wrap.querySelectorAll('[data-reject-group]').forEach(btn=>btn.addEventListener('click', async ()=>{
+    if(!confirm('この申請を却下しますか？（候補すべて削除されます）')) return;
+    const k=btn.dataset.rejectGroup; const all=groups[k].map(b=>b.id);
+    try{ await db.deleteBookings(all); }catch(e){ alert('却下に失敗しました'); return; }
     await renderAdmin();
   }));
 }
@@ -1018,10 +1034,14 @@ $('#cfSave').addEventListener('click', async ()=>{
 });
 
 /* ===== 休止日 ===== */
-$('#blockAdd').addEventListener('click', async ()=>{
-  const v=$('#blockDate').value; if(!v) return;
-  try{ await db.addBlocked(v); }catch(e){ alert('追加に失敗しました'); return; }
-  $('#blockDate').value=''; blockedCache=await db.blockedDays(); renderBlockList();
+$('#dayOff').addEventListener('click', async ()=>{
+  const v=$('#psDate').value;
+  if(!v){ alert('日付を選んでください'); return; }
+  if(!confirm(v+' を終日休み（予約不可）にしますか？')) return;
+  const btn=$('#dayOff'); const o=btn.textContent; btn.disabled=true; btn.textContent='設定中…';
+  try{ await db.addBlocked(v); blockedCache=await db.blockedDays(); renderBlockList(); }
+  catch(e){ alert('設定に失敗しました'); }
+  finally{ btn.disabled=false; btn.textContent=o; }
 });
 function renderBlockList(){
   const wrap=$('#blockList'); const list=blockedCache;
@@ -1071,7 +1091,8 @@ $('#pushBtn').addEventListener('click', async ()=>{
 });
 
 /* ===== 私用枠の解放 ===== */
-$('#psTimes').innerHTML=[9,10,11,12,13,14,15,16,17,18,19,20,21].map(h=>`<button class="pslot" data-h="${h}:00">${h}:00</button>`).join('');
+$('#psTimes').innerHTML=Array.from({length:24},(_,h)=>`<button class="pslot" data-h="${h}:00">${h}:00</button>`).join('');
+$('#psQuick').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const set=fn=>$$('#psTimes .pslot').forEach(x=>x.classList.toggle('sel',fn(parseInt(x.dataset.h)))); const q=b.dataset.q; if(q==='all')set(()=>true); else if(q==='clear')set(()=>false); else if(q==='day')set(h=>h>=9&&h<=18); else if(q==='night')set(h=>h>=18&&h<=23); });
 $('#psTimes').addEventListener('click',e=>{ const b=e.target.closest('.pslot'); if(b) b.classList.toggle('sel'); });
 $('#psAdd').addEventListener('click', async ()=>{
   const date=$('#psDate').value;

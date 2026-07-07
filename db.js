@@ -67,6 +67,27 @@ export async function blockedDays(){
   return (data||[]).map(r=>r.day);
 }
 
+/* ---- 日程調整：候補まとめて申請 / 複数承認 ---- */
+export async function submitRequest(req, candidates){
+  const rows = candidates.map(c => ({
+    no:req.no, type:req.type, dur:req.dur, category_slug:req.categorySlug, color:req.color,
+    source:req.source||'customer', status:'pending', request_id:req.requestId,
+    date_key:c.dateKey, date_label:c.dateLabel, time:c.time,
+    name:req.name, company:req.company||null, tel:req.tel||null, mail:req.mail||null,
+    memo:req.memo||null, instagram:req.instagram||null, line_url:req.lineUrl||null
+  }));
+  const { error } = await supabase.from('bookings').insert(rows);
+  if(error) throw error;
+}
+export async function approveCandidates(ids){
+  const { error } = await supabase.from('bookings').update({ status:'approved' }).in('id', ids);
+  if(error) throw error;
+}
+export async function deleteBookings(ids){
+  const { error } = await supabase.from('bookings').delete().in('id', ids);
+  if(error) throw error;
+}
+
 /* ---- 私用の解放枠 ---- */
 export async function privateSlotsForDate(dateKey){
   const { data, error } = await supabase.from('private_slots').select('time').eq('date_key', dateKey);
