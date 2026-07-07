@@ -88,6 +88,23 @@ export async function deleteBookings(ids){
   if(error) throw error;
 }
 
+/* ---- 自分の予定（終日 / 時間帯）---- */
+export async function addAdminAppointment(a){
+  let hours=[];
+  if(a.allDay){ hours=Array.from({length:24},(_,h)=>h); }
+  else { const s=parseInt(a.startTime), e=parseInt(a.endTime); for(let h=s;h<e;h++) hours.push(h); }
+  if(!hours.length) hours=[parseInt(a.startTime)||0];
+  const dur = a.allDay ? '終日' : ((parseInt(a.endTime)-parseInt(a.startTime))*60+'分');
+  const rows = hours.map(h=>({
+    no:a.no, type:a.type, dur, category_slug:a.categorySlug, color:a.color, source:'admin', status:'approved',
+    request_id:a.requestId, date_key:a.dateKey, date_label:a.dateLabel,
+    time:`${h}:00`, end_time:a.allDay?null:a.endTime, all_day:!!a.allDay,
+    name:a.title, memo:a.memo||null
+  }));
+  const { error } = await supabase.from('bookings').insert(rows);
+  if(error) throw error;
+}
+
 /* ---- 私用の解放枠 ---- */
 export async function privateSlotsForDate(dateKey){
   const { data, error } = await supabase.from('private_slots').select('time').eq('date_key', dateKey);
